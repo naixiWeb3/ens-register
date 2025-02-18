@@ -1,4 +1,4 @@
-import {createPublicClient, createWalletClient, http, formatEther, isAddress} from 'viem'
+import {createPublicClient, createWalletClient, http, formatEther, isAddress, parseEther} from 'viem'
 import {mainnet} from 'viem/chains'
 import {
     addEnsContracts,
@@ -84,15 +84,20 @@ async function registerEnsName(privateKey) {
         reverseRecord: true,
         secret,
     }
-    const commitmentHash = await wallet.commitName(params)
-    logger.success('Commitment Hash:', commitmentHash)
-    await client.waitForTransactionReceipt({hash: commitmentHash}) // wait for commitment to finalise
-    await new Promise((resolve) => setTimeout(resolve, 60 * 1_000)) // wait for commitment to be valid
     const {base, premium} = await client.getPrice({
         nameOrNames: params.name,
         duration: params.duration,
     })
     const value = ((base + premium) * 110n) / 100n // add 10% to the price for buffer
+    logger.info('Price:', formatEther(value))
+    if (value > parseEther("0.002", 'wei')) {
+        logger.error('register failed, Insufficient funds to register')
+        return false
+    }
+    const commitmentHash = await wallet.commitName(params)
+    logger.success('Commitment Hash:', commitmentHash)
+    await client.waitForTransactionReceipt({hash: commitmentHash}) // wait for commitment to finalise
+    await new Promise((resolve) => setTimeout(resolve, 60 * 1_000)) // wait for commitment to be valid
     logger.info('registerName Value:', formatEther(value))
     const hash = await wallet.registerName({...params, value})
     logger.success('registerName Hash:', hash)
@@ -113,7 +118,13 @@ async function main() {
             console.log("数据格式错误");
             continue;
         }
-        const success = await registerEnsName(privateKey)
+        let success = false
+        for (let i = 0; i < 5; i++) {
+            success = await registerEnsName(privateKey)
+            if (success) {
+                break
+            }
+        }
         if (success) {
             fs.appendFileSync('success.txt', `${address}----${privateKey}\n`)
         } else {

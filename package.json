@@ -1,0 +1,21 @@
+{
+  "name": "ens-register",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@ensdomains/ensjs": "^4.0.2",
+    "@youpaichris/logger": "^6.3.0",
+    "viem": "^2.23.2"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@faker-js/faker": "^9.5.0"
+  }
+}
